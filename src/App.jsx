@@ -54,7 +54,7 @@ const planets = [
 
   {
     name: "Earth",
-    radius: 0.15,
+    radius: 0.17,
     distance: 1 * AU,
     speed: 1,
     color: "#3976d2",
@@ -1822,12 +1822,13 @@ function Moon({ earthData, speed, onSelect }) {
           {/* MOON */}
           <mesh
             ref={moonRef}
-            position={[1.35, 0, 0]}
+            // position={[1.35, 0, 0]}
+            position={[0.45, 0, 0]}
             onClick={(e) => {
               e.stopPropagation();
               onSelect({
                 name: "Moon",
-                radius: 0.16,
+                radius: 0.045,
                 distance: 1.35,
                 speed: 0,
                 info: "Earth's natural satellite."
@@ -1835,7 +1836,8 @@ function Moon({ earthData, speed, onSelect }) {
               });
             }}
           >
-            <sphereGeometry args={[0.16, 48, 48]} />
+            {/* <sphereGeometry args={[0.16, 48, 48]} /> */}
+            <sphereGeometry args={[0.045, 48, 48]} />
 
             <meshStandardMaterial
               map={moonTexture}
@@ -2034,7 +2036,7 @@ function CameraController({ target }) {
       ref={controlsRef}
       enablePan={true}
       enableZoom={true}
-      minDistance={2}
+      minDistance={0.15}
       maxDistance={2000000}
       rotateSpeed={0.5}
       zoomSpeed={0.7}
@@ -2261,34 +2263,43 @@ function FreeCameraController() {
 
 function InnerOortCloud() {
   const positions = useMemo(() => {
-    const count = 5000;
+    const count = 50000;
     const data = new Float32Array(count * 3);
 
+    const innerRadius = 350;
+    const outerRadius = 700;
+
     for (let i = 0; i < count; i++) {
+      // Uniform distribution through a spherical volume
       const radius =
-        70 + Math.random() * 45;
+        Math.cbrt(Math.random()) *
+          (outerRadius - innerRadius) +
+        innerRadius;
 
-      const theta =
-        Math.random() * Math.PI * 2;
+      const theta = Math.random() * Math.PI * 2;
 
-      const phi =
-        Math.acos(
-          2 * Math.random() - 1
-        );
+      const phi = Math.acos(
+        2 * Math.random() - 1
+      );
 
-      data[i * 3] =
+      // Small natural positional variation
+      const x =
         radius *
         Math.sin(phi) *
         Math.cos(theta);
 
-      data[i * 3 + 1] =
+      const y =
         radius *
         Math.cos(phi);
 
-      data[i * 3 + 2] =
+      const z =
         radius *
         Math.sin(phi) *
         Math.sin(theta);
+
+      data[i * 3] = x;
+      data[i * 3 + 1] = y;
+      data[i * 3 + 2] = z;
     }
 
     return data;
@@ -2307,9 +2318,9 @@ function InnerOortCloud() {
 
       <pointsMaterial
         color="#dbeafe"
-        size={0.025}
+        size={0.028}
         transparent
-        opacity={0.35}
+        opacity={0.38}
         sizeAttenuation
       />
     </points>
@@ -3096,7 +3107,29 @@ function Voyager({ position, data, onSelect }) {
 }
 
 function KuiperBelt() {
-  const count = 3500;
+  const count = 80000;
+  const particleTexture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+
+    const ctx = canvas.getContext("2d");
+
+    const gradient = ctx.createRadialGradient(
+      32, 32, 0,
+      32, 32, 32
+    );
+
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.35, "rgba(255,255,255,0.9)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 64, 64);
+
+    return new THREE.CanvasTexture(canvas);
+  }, []);
+
   const positions = new Float32Array(count * 3);
 
   const innerRadius = 122;
@@ -3132,11 +3165,14 @@ function KuiperBelt() {
       </bufferGeometry>
 
       <pointsMaterial
+        map={particleTexture}
         color="#cbd5e1"
-        size={0.08}
+        size={0.12}
         transparent
         opacity={0.65}
         sizeAttenuation
+        depthWrite={false}
+        alphaTest={0.01}
       />
     </points>
   );
